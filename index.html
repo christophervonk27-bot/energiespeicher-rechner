@@ -15,78 +15,77 @@
 
         <main>
             <!-- Eingabebereich -->
-            <!-- Eingabebereich -->
-        <section class="input-section">
-    <h2>Eingabedaten</h2>
+            <section class="input-section">
+                <h2>Eingabedaten</h2>
 
-    <div class="input-group">
-        <label for="verbrauch">Jährlicher Stromverbrauch (kWh):</label>
-        <input type="number" id="verbrauch" placeholder="z.B. 50000" min="1000" step="100">
-        <span class="unit">kWh/Jahr</span>
-    </div>
+                <div class="input-group">
+                    <label for="verbrauch">Jährlicher Stromverbrauch (kWh):</label>
+                    <input type="number" id="verbrauch" placeholder="z.B. 50000" min="1000" step="100">
+                    <span class="unit">kWh/Jahr</span>
+                </div>
 
-    <div class="input-group">
-        <label for="pv-nutzquote">Aktuelle PV-Nutzquote (%):</label>
-        <input type="number" id="pv-nutzquote" placeholder="z.B. 30" min="0" max="100" step="1">
-        <span class="unit">%</span>
-        <span class="hint">Wie viel % Ihres Strombedarfs deckt Ihre PV-Anlage bereits?</span>
-    </div>
+                <div class="input-group">
+                    <label for="pv-nutzquote">Aktuelle PV-Nutzquote (%):</label>
+                    <input type="number" id="pv-nutzquote" placeholder="z.B. 30" min="0" max="100" step="1">
+                    <span class="unit">%</span>
+                    <span class="hint">Wie viel % Ihres Strombedarfs deckt Ihre PV-Anlage bereits?</span>
+                </div>
 
-    <div class="input-group">
-        <label for="pv-leistung">PV-Anlagenleistung (kWp) - optional:</label>
-        <input type="number" id="pv-leistung" placeholder="z.B. 50" min="0" step="1">
-        <span class="unit">kWp</span>
-        <span class="hint">Nur zur Info, nicht für die Berechnung nötig</span>
-    </div>
+                <div class="input-group">
+                    <label for="pv-leistung">PV-Anlagenleistung (kWp) - optional:</label>
+                    <input type="number" id="pv-leistung" placeholder="z.B. 50" min="0" step="1">
+                    <span class="unit">kWp</span>
+                    <span class="hint">Nur zur Info, nicht für die Berechnung nötig</span>
+                </div>
 
-    <div class="input-group">
-        <label for="lastprofil">Lastprofil:</label>
-        <select id="lastprofil">
-            <option value="gleichmaessig">Gleichmäßig (24/7)</option>
-            <option value="tag">Taglast (8-18 Uhr)</option>
-            <option value="schicht">Schichtbetrieb</option>
-            <option value="spitze">Spitzenlast</option>
-        </select>
-    </div>
+                <div class="input-group">
+                    <label for="lastprofil">Lastprofil:</label>
+                    <select id="lastprofil">
+                        <option value="gleichmaessig">Gleichmäßig (24/7)</option>
+                        <option value="tag">Taglast (8-18 Uhr)</option>
+                        <option value="schicht">Schichtbetrieb</option>
+                        <option value="spitze">Spitzenlast</option>
+                    </select>
+                </div>
 
-    <div class="input-group">
-        <label for="autarkie">Gewünschter Autarkiegrad (%):</label>
-        <input type="number" id="autarkie" placeholder="z.B. 70" min="0" max="100" step="5">
-        <span class="unit">%</span>
-    </div>
+                <div class="input-group">
+                    <label for="autarkie">Gewünschter Autarkiegrad (%):</label>
+                    <input type="number" id="autarkie" placeholder="z.B. 70" min="0" max="100" step="5">
+                    <span class="unit">%</span>
+                </div>
 
-    <div class="input-group">
-        <label for="strompreis">Aktueller Strompreis (€/kWh):</label>
-        <input type="number" id="strompreis" placeholder="z.B. 0.30" min="0" step="0.01">
-        <span class="unit">€/kWh</span>
-    </div>
+                <div class="input-group">
+                    <label for="strompreis">Aktueller Strompreis (€/kWh):</label>
+                    <input type="number" id="strompreis" placeholder="z.B. 0.30" min="0" step="0.01">
+                    <span class="unit">€/kWh</span>
+                </div>
 
-    <div class="input-group">
-        <label for="einspeiseverguetung">Einspeisevergütung (€/kWh):</label>
-        <input type="number" id="einspeiseverguetung" placeholder="z.B. 0.06" min="0" step="0.01">
-        <span class="unit">€/kWh</span>
-    </div>
+                <div class="input-group">
+                    <label for="einspeiseverguetung">Einspeisevergütung (€/kWh):</label>
+                    <input type="number" id="einspeiseverguetung" placeholder="z.B. 0.06" min="0" step="0.01">
+                    <span class="unit">€/kWh</span>
+                </div>
 
-    <div class="input-group">
-        <label for="speicher-kosten">Speicherkosten (€/kWh):</label>
-        <input type="number" id="speicher-kosten" placeholder="z.B. 450" min="100" step="10">
-        <span class="unit">€/kWh</span>
-    </div>
+                <div class="input-group">
+                    <label for="speicher-kosten">Speicherkosten (€/kWh):</label>
+                    <input type="number" id="speicher-kosten" placeholder="z.B. 450" min="100" step="10">
+                    <span class="unit">€/kWh</span>
+                </div>
 
-    <div class="input-group">
-        <label for="lebensdauer">Lebensdauer des Speichers (Jahre):</label>
-        <input type="number" id="lebensdauer" placeholder="z.B. 15" min="5" max="30" step="1">
-        <span class="unit">Jahre</span>
-    </div>
+                <div class="input-group">
+                    <label for="lebensdauer">Lebensdauer des Speichers (Jahre):</label>
+                    <input type="number" id="lebensdauer" placeholder="z.B. 15" min="5" max="30" step="1">
+                    <span class="unit">Jahre</span>
+                </div>
 
-    <div class="input-group">
-        <label for="wirkungsgrad">Wirkungsgrad des Speichers (%):</label>
-        <input type="number" id="wirkungsgrad" placeholder="z.B. 96" min="80" max="100" step="1">
-        <span class="unit">%</span>
-    </div>
+                <div class="input-group">
+                    <label for="wirkungsgrad">Wirkungsgrad des Speichers (%):</label>
+                    <input type="number" id="wirkungsgrad" placeholder="z.B. 96" min="80" max="100" step="1">
+                    <span class="unit">%</span>
+                </div>
 
-    <button id="berechnen-btn" class="btn">Berechnen</button>
-</section>
+                <button id="berechnen-btn" class="btn">Berechnen</button>
+            </section>
 
             <!-- Ergebnisbereich -->
             <section class="result-section" id="ergebnis">
