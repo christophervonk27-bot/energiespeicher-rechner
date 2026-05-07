@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gewerbespeicher Rechner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Gewerbespeicher Rechner</h1>
+            <p class="subtitle">Berechnen Sie die optimale Speichergröße und Amortisation für Ihren Gewerbespeicher.</p>
+        </header>
+
+        <main>
+            <!-- Eingabebereich -->
+            <section class="input-section">
+                <h2>Eingabedaten</h2>
+                
+                <div class="input-group">
+                    <label for="verbrauch">Jährlicher Stromverbrauch (kWh):</label>
+                    <input type="number" id="verbrauch" placeholder="z.B. 50000" min="1000" step="100">
+                    <span class="unit">kWh/Jahr</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="lastprofil">Lastprofil:</label>
+                    <select id="lastprofil">
+                        <option value="gleichmaessig">Gleichmäßig</option>
+                        <option value="tag">Taglast (z.B. Büro)</option>
+                        <option value="schicht">Schichtbetrieb</option>
+                        <option value="spitze">Spitzenlast</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="pv-leistung">PV-Anlagenleistung (kWp):</label>
+                    <input type="number" id="pv-leistung" placeholder="z.B. 30" min="0" step="1">
+                    <span class="unit">kWp</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="autarkie">Gewünschter Autarkiegrad (%):</label>
+                    <input type="number" id="autarkie" placeholder="z.B. 70" min="0" max="100" step="5">
+                    <span class="unit">%</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="strompreis">Aktueller Strompreis (€/kWh):</label>
+                    <input type="number" id="strompreis" placeholder="z.B. 0.25" min="0" step="0.01">
+                    <span class="unit">€/kWh</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="einspeiseverguetung">Einspeisevergütung (€/kWh):</label>
+                    <input type="number" id="einspeiseverguetung" placeholder="z.B. 0.08" min="0" step="0.01">
+                    <span class="unit">€/kWh</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="speicher-kosten">Speicherkosten (€/kWh):</label>
+                    <input type="number" id="speicher-kosten" placeholder="z.B. 500" min="100" step="10">
+                    <span class="unit">€/kWh</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="lebensdauer">Lebensdauer des Speichers (Jahre):</label>
+                    <input type="number" id="lebensdauer" placeholder="z.B. 15" min="5" max="30" step="1">
+                    <span class="unit">Jahre</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="wirkungsgrad">Wirkungsgrad des Speichers (%):</label>
+                    <input type="number" id="wirkungsgrad" placeholder="z.B. 95" min="80" max="100" step="1">
+                    <span class="unit">%</span>
+                </div>
+
+                <button id="berechnen-btn" class="btn">Berechnen</button>
+            </section>
+
+            <!-- Ergebnisbereich -->
+            <section class="result-section" id="ergebnis">
+                <h2>Ergebnisse</h2>
+                
+                <div class="result-card">
+                    <h3>Empfohlene Speichergröße</h3>
+                    <div class="result-value" id="speicher-groesse">- kWh</div>
+                    <p class="result-description">Optimale Kapazität basierend auf Ihrem Verbrauch und Lastprofil.</p>
+                </div>
+
+                <div class="result-card">
+                    <h3>Erreichbarer Autarkiegrad</h3>
+                    <div class="result-value" id="erreichter-autarkie">- %</div>
+                    <p class="result-description">Tatsächlicher Autarkiegrad mit der empfohlenen Speichergröße.</p>
+                </div>
+
+                <div class="result-card">
+                    <h3>Investitionskosten</h3>
+                    <div class="result-value" id="investition">- €</div>
+                    <p class="result-description">Gesamtkosten für den Speicher.</p>
+                </div>
+
+                <div class="result-card">
+                    <h3>Jährliche Einsparung</h3>
+                    <div class="result-value" id="einsparung">- €</div>
+                    <p class="result-description">Einsparung durch Eigenverbrauch statt Netzbezug.</p>
+                </div>
+
+                <div class="result-card">
+                    <h3>Amortisationszeit</h3>
+                    <div class="result-value" id="amortisation">- Jahre</div>
+                    <p class="result-description">Zeit bis sich die Investition amortisiert hat.</p>
+                </div>
+
+                <div class="result-card">
+                    <h3>Jährliche Rendite</h3>
+                    <div class="result-value" id="rendite">- %</div>
+                    <p class="result-description">Jährliche Rendite auf die Investition.</p>
+                </div>
+
+                <div class="chart-container" id="verlauf-chart">
+                    <h3>Amortisationsverlauf</h3>
+                    <canvas id="amortisation-chart"></canvas>
+                </div>
+            </section>
+
+            <!-- Info-Bereich -->
+            <section class="info-section">
+                <h2>Hinweise</h2>
+                <p>
+                    Dieser Rechner bietet eine <strong>Schätzung</strong> basierend auf den eingegebenen Daten. 
+                    Die tatsächlichen Werte können je nach Standort, Wetterbedingungen, Nutzungsverhalten und 
+                    technischer Ausführung abweichen.
+                </p>
+                <p>
+                    <strong>Empfehlung:</strong> Konsultieren Sie einen Fachbetrieb für eine detaillierte Planung.
+                </p>
+            </section>
+        </main>
+
+        <footer>
+            <p>Gewerbespeicher Rechner &copy; 2024 | Für GitHub Pages</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
