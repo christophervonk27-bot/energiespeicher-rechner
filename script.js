@@ -1,47 +1,33 @@
 /**
- * Gewerbespeicher Rechner - KORRIGIERTE VERSION 2026
- * Basierend auf aktuellen Marktdaten für Deutschland (2026)
+ * Gewerbespeicher Rechner - SPEICHER-ALLEIN-AMORTISATION
+ * Berechnet die Amortisation des Speichers unabhängig von der PV-Anlage
+ * Mit PV-Nutzquote als Eingabe
  */
 
-// Aktuelle Lastprofile für Gewerbe (2026)
+// Lastprofile für Gewerbe
 const LASTPROFILE = {
-    gleichmaessig: {
-        name: 'Gleichmäßig (24/7 Betrieb)',
-        direktverbrauch: 0.40,  // 40% des PV-Stroms wird direkt verbraucht
-        speicherbedarf: 0.60     // 60% des Verbrauchs kann durch Speicher abgedeckt werden
-    },
-    tag: {
-        name: 'Taglast (8-18 Uhr, z.B. Büro)',
-        direktverbrauch: 0.65,  // 65% des PV-Stroms wird direkt verbraucht
-        speicherbedarf: 0.45     // 45% des Verbrauchs kann durch Speicher abgedeckt werden
-    },
-    schicht: {
-        name: 'Schichtbetrieb (2-3 Schichten)',
-        direktverbrauch: 0.50,  // 50% des PV-Stroms wird direkt verbraucht
-        speicherbedarf: 0.55     // 55% des Verbrauchs kann durch Speicher abgedeckt werden
-    },
-    spitze: {
-        name: 'Spitzenlast (kurze Hochlastphasen)',
-        direktverbrauch: 0.25,  // 25% des PV-Stroms wird direkt verbraucht
-        speicherbedarf: 0.75     // 75% des Verbrauchs kann durch Speicher abgedeckt werden
-    }
+    gleichmaessig: { name: 'Gleichmäßig (24/7)', faktor: 0.60 },
+    tag: { name: 'Taglast (8-18 Uhr)', faktor: 0.45 },
+    schicht: { name: 'Schichtbetrieb', faktor: 0.55 },
+    spitze: { name: 'Spitzenlast', faktor: 0.75 }
 };
 
-// Aktuelle Standardwerte für Deutschland 2026
+// Standardwerte 2026
 const DEFAULTS = {
-    verbrauch: 50000,        // kWh/Jahr (typischer Gewerbebetrieb)
-    pvLeistung: 50,          // kWp (typische Gewerbeanlage)
+    verbrauch: 50000,        // kWh/Jahr
+    pvLeistung: 50,          // kWp (nur zur Info, nicht für Berechnung)
+    pvNutzquote: 30,         // % des Bedarfs, die die PV bereits deckt
+    lastprofil: 'gleichmaessig',
     autarkie: 70,            // %
-    strompreis: 0.30,        // €/kWh (Gewerbestrompreis 2026 - gestiegen!)
-    einspeiseverguetung: 0.06, // €/kWh (EEG 2026 - gesunken!)
-    speicherKosten: 450,     // €/kWh (2026: günstiger durch Skaleneffekte)
-    lebensdauer: 15,        // Jahre (moderne Lithium-Ionen-Speicher)
-    wirkungsgrad: 96         // % (verbesserte Technologie 2026)
+    strompreis: 0.30,        // €/kWh
+    einspeiseverguetung: 0.06, // €/kWh
+    speicherKosten: 450,     // €/kWh
+    lebensdauer: 15,        // Jahre
+    wirkungsgrad: 96         // %
 };
 
 let amortisationChart = null;
 
-// ===== INITIALISIERUNG =====
 document.addEventListener('DOMContentLoaded', function() {
     loadDefaults();
     document.getElementById('berechnen-btn').addEventListener('click', berechnen);
@@ -54,6 +40,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadDefaults() {
     document.getElementById('verbrauch').value = DEFAULTS.verbrauch;
     document.getElementById('pv-leistung').value = DEFAULTS.pvLeistung;
+    document.getElementById('pv-nutzquote').value = DEFAULTS.pvNutzquote;
+    document.getElementById('lastprofil').value = DEFAULTS.lastprofil;
     document.getElementById('autarkie').value = DEFAULTS.autarkie;
     document.getElementById('strompreis').value = DEFAULTS.strompreis;
     document.getElementById('einspeiseverguetung').value = DEFAULTS.einspeiseverguetung;
@@ -62,12 +50,11 @@ function loadDefaults() {
     document.getElementById('wirkungsgrad').value = DEFAULTS.wirkungsgrad;
 }
 
-// ===== HAUPTFUNKTION =====
 function berechnen() {
     const input = {
         verbrauch: parseFloat(document.getElementById('verbrauch').value) || 0,
+        pvNutzquote: parseFloat(document.getElementById('pv-nutzquote').value) || 0,
         lastprofil: document.getElementById('lastprofil').value,
-        pvLeistung: parseFloat(document.getElementById('pv-leistung').value) || 0,
         autarkie: parseFloat(document.getElementById('autarkie').value) || 0,
         strompreis: parseFloat(document.getElementById('strompreis').value) || 0,
         einspeiseverguetung: parseFloat(document.getElementById('einspeiseverguetung').value) || 0,
@@ -89,7 +76,7 @@ function berechnen() {
 function validateInput(input) {
     return (
         input.verbrauch > 0 &&
-        input.pvLeistung >= 0 &&
+        input.pvNutzquote >= 0 && input.pvNutzquote <= 100 &&
         input.autarkie >= 0 && input.autarkie <= 100 &&
         input.strompreis > 0 &&
         input.einspeiseverguetung >= 0 &&
@@ -99,65 +86,71 @@ function validateInput(input) {
     );
 }
 
-// ===== KORRIGIERTE BERECHNUNGSLOGIK 2026 =====
+// ===== BERECHNUNGSLOGIK (NUR SPEICHER) =====
 function calculateResults(input) {
     const profil = LASTPROFILE[input.lastprofil];
-    const eta = input.wirkungsgrad / 100; // Wirkungsgrad
+    const eta = input.wirkungsgrad / 100;
 
-    // 1. PV-Ertrag (kWh/Jahr) - Realistisch für Deutschland 2026: 950-1150 kWh/kWp
-    const pvErtrag = input.pvLeistung * 1050; // Mittelwert 2026
+    // 1. Aktueller Eigenverbrauch (durch PV)
+    const aktuellerEigenverbrauch = input.verbrauch * (input.pvNutzquote / 100);
 
-    // 2. Direktverbrauch (kWh/Jahr)
-    const direktVerbrauch = Math.min(pvErtrag * profil.direktverbrauch, input.verbrauch);
+    // 2. Aktueller Netzbezug
+    const netzbezugAktuell = input.verbrauch - aktuellerEigenverbrauch;
 
-    // 3. Überschuss (kWh/Jahr)
-    const überschuss = pvErtrag - direktVerbrauch;
+    // 3. Überschuss (wird aktuell eingespeist)
+    // Annahme: PV-Ertrag = aktueller Eigenverbrauch / Direktverbrauchsquote
+    // (Da wir keine PV-Leistung für die Berechnung brauchen, schätzen wir den Überschuss)
+    const direktverbrauchsquote = profil.faktor;
+    const pvErtrag = aktuellerEigenverbrauch / direktverbrauchsquote;
+    const überschussAktuell = pvErtrag - aktuellerEigenverbrauch;
 
     // ===== SPEICHERGRÖßENBERECHNUNG =====
     // Ziel: Gewünschten Autarkiegrad erreichen
     // 1. Wie viel Strom fehlt noch für den gewünschten Autarkiegrad?
-    const fehlenderStrom = input.verbrauch * (input.autarkie / 100) - direktVerbrauch;
+    const fehlenderStrom = input.verbrauch * (input.autarkie / 100) - aktuellerEigenverbrauch;
 
     // 2. Tagesbedarf für Speicher
     const tagesBedarf = fehlenderStrom / 365;
 
     // 3. Benötigte Speichergröße (kWh)
-    // Berücksichtigt: Tagesbedarf + Puffer für schlechte Tage + verfügbarer Überschuss
     const speicherGroesse = Math.min(
-        tagesBedarf * 1.5,  // 50% Puffer für schlechte Tage
-        überschuss * 0.20    // Maximal 20% des Jahresüberschusses als Speichergröße
+        tagesBedarf * 1.5,  // 50% Puffer für Nachtverbrauch
+        überschussAktuell * 0.20  // Maximal 20% des Jahresüberschusses
     );
 
-    // Mindestgröße: 10 kWh, Maximalgröße: 1000 kWh (für große Gewerbebetriebe)
-    const empfohleneSpeicherGroesse = Math.max(10, Math.min(speicherGroesse, 1000));
+    // Mindestgröße: 10 kWh, Maximalgröße: 2000 kWh
+    const empfohleneSpeicherGroesse = Math.max(10, Math.min(speicherGroesse, 2000));
 
     // ===== ERREICHBARER AUTARKIEGRAD =====
     // Wie viel Strom kann tatsächlich durch den Speicher abgedeckt werden?
     const speicherNutzungProJahr = Math.min(
-        empfohleneSpeicherGroesse * 365 * eta,  // Maximal mögliche Speichernutzung
-        überschuss * eta                        // Begrenzt durch verfügbaren Überschuss
+        empfohleneSpeicherGroesse * 365 * eta,
+        überschussAktuell * eta
     );
-    const eigenverbrauchMitSpeicher = direktVerbrauch + speicherNutzungProJahr;
+
+    const eigenverbrauchMitSpeicher = aktuellerEigenverbrauch + speicherNutzungProJahr;
     const erreichterAutarkie = Math.min(
         (eigenverbrauchMitSpeicher / input.verbrauch) * 100,
         100
     );
 
-    // ===== INVESTITIONSKOSTEN =====
+    // ===== INVESTITIONSKOSTEN (NUR SPEICHER) =====
     const investition = empfohleneSpeicherGroesse * input.speicherKosten;
 
-    // ===== JÄHRLICHE EINSPARUNG =====
-    // Einsparung = (Eigenverbrauch mit Speicher - Eigenverbrauch ohne Speicher) * Strompreis
-    // + (Überschuss ohne Speicher - Überschuss mit Speicher) * (Strompreis - Einspeisevergütung)
-    const überschussMitSpeicher = Math.max(0, überschuss - (speicherNutzungProJahr / eta));
-    const einsparungDurchEigenverbrauch = (eigenverbrauchMitSpeicher - direktVerbrauch) * input.strompreis;
-    const einsparungDurchReduzierteEinspeisung = (überschuss - überschussMitSpeicher) * (input.strompreis - input.einspeiseverguetung);
+    // ===== JÄHRLICHE EINSPARUNG (NUR DURCH SPEICHER) =====
+    // Einsparung = (Mehr Eigenverbrauch durch Speicher) * Strompreis
+    // + (Weniger Einspeisung) * (Strompreis - Einspeisevergütung)
+    const mehrEigenverbrauch = speicherNutzungProJahr;
+    const wenigerEinspeisung = Math.min(überschussAktuell, speicherNutzungProJahr / eta);
+
+    const einsparungDurchEigenverbrauch = mehrEigenverbrauch * input.strompreis;
+    const einsparungDurchReduzierteEinspeisung = wenigerEinspeisung * (input.strompreis - input.einspeiseverguetung);
     const jaehrlicheEinsparung = einsparungDurchEigenverbrauch + einsparungDurchReduzierteEinspeisung;
 
-    // ===== AMORTISATIONSZEIT =====
+    // ===== AMORTISATIONSZEIT (NUR SPEICHER) =====
     const amortisationszeit = jaehrlicheEinsparung > 0
-        ? Math.min(investition / jaehrlicheEinsparung, input.lebensdauer * 2)
-        : 999; // Falls keine Einsparung möglich
+        ? investition / jaehrlicheEinsparung
+        : 999;
 
     // ===== JÄHRLICHE RENDITE =====
     const jaehrlicheRendite = jaehrlicheEinsparung > 0
@@ -179,13 +172,12 @@ function calculateResults(input) {
         amortisationszeit: Math.round(amortisationszeit * 10) / 10,
         jaehrlicheRendite: Math.round(jaehrlicheRendite * 10) / 10,
         pvErtrag: Math.round(pvErtrag),
-        direktVerbrauch: Math.round(direktVerbrauch),
-        überschuss: Math.round(überschuss),
+        aktuellerEigenverbrauch: Math.round(aktuellerEigenverbrauch),
+        überschussAktuell: Math.round(überschussAktuell),
         amortisationsVerlauf: amortisationsVerlauf
     };
 }
 
-// ===== AMORTISATIONSVERLAUF =====
 function calculateAmortisationVerlauf(investition, jaehrlicheEinsparung, lebensdauer) {
     const verlauf = [];
     let kumuliert = 0;
@@ -194,7 +186,6 @@ function calculateAmortisationVerlauf(investition, jaehrlicheEinsparung, lebensd
         if (jahr <= lebensdauer) {
             kumuliert += jaehrlicheEinsparung;
         } else {
-            // Nach Lebensdauer: 80% der ursprünglichen Einsparung (neuer Speicher)
             kumuliert += jaehrlicheEinsparung * 0.8;
         }
 
@@ -211,7 +202,6 @@ function calculateAmortisationVerlauf(investition, jaehrlicheEinsparung, lebensd
     return verlauf;
 }
 
-// ===== ANZEIGE DER ERGEBNISSE =====
 function displayResults(results) {
     document.getElementById('speicher-groesse').textContent = `${formatNumber(results.speicherGroesse)} kWh`;
     document.getElementById('erreichter-autarkie').textContent = `${formatNumber(results.erreichterAutarkie)} %`;
@@ -222,7 +212,6 @@ function displayResults(results) {
     document.getElementById('ergebnis').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ===== CHART-FUNKTIONEN =====
 function initChart() {
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
@@ -277,7 +266,6 @@ function updateChart(results) {
     amortisationChart.update();
 }
 
-// ===== HILFSFUNKTIONEN =====
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
