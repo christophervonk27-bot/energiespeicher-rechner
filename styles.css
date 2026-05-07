@@ -1,354 +1,263 @@
-/* Grundlegende Styles */
-:root {
-    --primary-color: #2c3e50;
-    --secondary-color: #3498db;
-    --accent-color: #e74c3c;
-    --light-color: #ecf0f1;
-    --dark-color: #2c3e50;
-    --success-color: #27ae60;
-    --warning-color: #f39c12;
-    --text-color: #333;
-    --text-light: #7f8c8d;
-    --border-radius: 8px;
-    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
+/**
+ * Gewerbespeicher Rechner - ENDGÜLTIG KORRIGIERTE VERSION
+ * Basierend auf physikalischen Grundprinzipien und Marktdaten 2026
+ */
+
+const LASTPROFILE = {
+    gleichmaessig: { direktverbrauch: 0.30, speicherbedarf: 0.70 },
+    tag: { direktverbrauch: 0.50, speicherbedarf: 0.50 },
+    schicht: { direktverbrauch: 0.40, speicherbedarf: 0.60 },
+    spitze: { direktverbrauch: 0.20, speicherbedarf: 0.80 }
+};
+
+const DEFAULTS = {
+    verbrauch: 50000,
+    pvLeistung: 50,
+    autarkie: 70,
+    strompreis: 0.30,
+    einspeiseverguetung: 0.06,
+    speicherKosten: 450,
+    lebensdauer: 15,
+    wirkungsgrad: 96
+};
+
+let amortisationChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadDefaults();
+    document.getElementById('berechnen-btn').addEventListener('click', berechnen);
+    document.querySelectorAll('input, select').forEach(input => {
+        input.addEventListener('keypress', (e) => e.key === 'Enter' && berechnen());
+    });
+    initChart();
+});
+
+function loadDefaults() {
+    Object.keys(DEFAULTS).forEach(key => {
+        const id = key === 'pvLeistung' ? 'pv-leistung' : key.toLowerCase();
+        if (document.getElementById(id)) {
+            document.getElementById(id).value = DEFAULTS[key];
+        }
+    });
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+function berechnen() {
+    const input = {
+        verbrauch: parseFloat(document.getElementById('verbrauch').value) || 0,
+        lastprofil: document.getElementById('lastprofil').value,
+        pvLeistung: parseFloat(document.getElementById('pv-leistung').value) || 0,
+        autarkie: parseFloat(document.getElementById('autarkie').value) || 0,
+        strompreis: parseFloat(document.getElementById('strompreis').value) || 0,
+        einspeiseverguetung: parseFloat(document.getElementById('einspeiseverguetung').value) || 0,
+        speicherKosten: parseFloat(document.getElementById('speicher-kosten').value) || 0,
+        lebensdauer: parseFloat(document.getElementById('lebensdauer').value) || 0,
+        wirkungsgrad: parseFloat(document.getElementById('wirkungsgrad').value) || 0
+    };
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    color: var(--text-color);
-    background-color: #f5f7fa;
-    padding: 0;
-    margin: 0;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-/* Header */
-header {
-    text-align: center;
-    margin-bottom: 40px;
-    padding: 20px 0;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    color: white;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-}
-
-header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-}
-
-header .subtitle {
-    font-size: 1.1rem;
-    opacity: 0.9;
-}
-
-/* Main Layout */
-main {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-}
-
-@media (max-width: 900px) {
-    main {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Input Section */
-.input-section {
-    background: white;
-    padding: 30px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-}
-
-.input-section h2 {
-    color: var(--primary-color);
-    margin-bottom: 25px;
-    font-size: 1.5rem;
-    border-bottom: 2px solid var(--secondary-color);
-    padding-bottom: 10px;
-}
-
-.input-group {
-    margin-bottom: 20px;
-}
-
-.input-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.input-group input,
-.input-group select {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #ddd;
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    transition: var(--transition);
-    background-color: #f9f9f9;
-}
-
-.input-group input:focus,
-.input-group select:focus {
-    outline: none;
-    border-color: var(--secondary-color);
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-    background-color: white;
-}
-
-.input-group input::placeholder {
-    color: #aaa;
-}
-
-.unit {
-    display: inline-block;
-    margin-left: 10px;
-    color: var(--text-light);
-    font-size: 0.9rem;
-}
-
-.btn {
-    display: block;
-    width: 100%;
-    padding: 15px;
-    background: var(--secondary-color);
-    color: white;
-    border: none;
-    border-radius: var(--border-radius);
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    margin-top: 10px;
-}
-
-.btn:hover {
-    background: #2980b9;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.btn:active {
-    transform: translateY(0);
-}
-
-/* Result Section */
-.result-section {
-    background: white;
-    padding: 30px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-}
-
-.result-section h2 {
-    color: var(--primary-color);
-    margin-bottom: 25px;
-    font-size: 1.5rem;
-    border-bottom: 2px solid var(--success-color);
-    padding-bottom: 10px;
-}
-
-.result-card {
-    background: var(--light-color);
-    padding: 20px;
-    border-radius: var(--border-radius);
-    margin-bottom: 20px;
-    transition: var(--transition);
-}
-
-.result-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-}
-
-.result-card h3 {
-    color: var(--primary-color);
-    margin-bottom: 10px;
-    font-size: 1.1rem;
-}
-
-.result-value {
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--success-color);
-    margin: 10px 0;
-}
-
-.result-description {
-    color: var(--text-light);
-    font-size: 0.9rem;
-    margin-top: 5px;
-}
-
-/* Chart Container */
-.chart-container {
-    background: white;
-    padding: 20px;
-    border-radius: var(--border-radius);
-    margin-top: 30px;
-    box-shadow: var(--box-shadow);
-}
-
-.chart-container h3 {
-    color: var(--primary-color);
-    margin-bottom: 15px;
-    text-align: center;
-}
-
-#amortisation-chart {
-    width: 100%;
-    max-height: 300px;
-}
-
-/* Info Section */
-.info-section {
-    grid-column: 1 / -1;
-    background: white;
-    padding: 25px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    margin-top: 20px;
-}
-
-.info-section h2 {
-    color: var(--primary-color);
-    margin-bottom: 15px;
-    font-size: 1.3rem;
-}
-
-.info-section p {
-    margin-bottom: 10px;
-    color: var(--text-light);
-}
-
-/* Footer */
-footer {
-    text-align: center;
-    margin-top: 40px;
-    padding: 20px;
-    color: var(--text-light);
-    font-size: 0.9rem;
-    background: white;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-}
-
-/* Responsive Design */
-@media (max-width: 600px) {
-    .container {
-        padding: 10px;
+    if (!validateInput(input)) {
+        alert('Bitte alle Felder mit gültigen Werten ausfüllen!');
+        return;
     }
 
-    header h1 {
-        font-size: 1.8rem;
+    const results = calculateResults(input);
+    displayResults(results);
+    updateChart(results);
+}
+
+function validateInput(input) {
+    return (
+        input.verbrauch > 0 &&
+        input.pvLeistung >= 0 &&
+        input.autarkie >= 0 && input.autarkie <= 100 &&
+        input.strompreis > 0 &&
+        input.einspeiseverguetung >= 0 &&
+        input.speicherKosten > 0 &&
+        input.lebensdauer > 0 &&
+        input.wirkungsgrad >= 80 && input.wirkungsgrad <= 100
+    );
+}
+
+// ===== KORRIGIERTE BERECHNUNGSLOGIK =====
+function calculateResults(input) {
+    const profil = LASTPROFILE[input.lastprofil];
+    const eta = input.wirkungsgrad / 100;
+
+    // 1. PV-Ertrag (kWh/Jahr)
+    const pvErtrag = input.pvLeistung * 1050; // 1050 kWh/kWp für Deutschland 2026
+
+    // 2. Direktverbrauch (kWh/Jahr)
+    const direktVerbrauch = Math.min(pvErtrag * profil.direktverbrauch, input.verbrauch);
+
+    // 3. Überschuss (kWh/Jahr)
+    const überschuss = pvErtrag - direktVerbrauch;
+
+    // ===== SPEICHERGRÖßENBERECHNUNG =====
+    // Ziel: Gewünschten Autarkiegrad erreichen
+    // 1. Wie viel Strom fehlt noch für den gewünschten Autarkiegrad?
+    const fehlenderStrom = input.verbrauch * (input.autarkie / 100) - direktVerbrauch;
+
+    // 2. Wie viel davon kann durch Speicher abgedeckt werden?
+    // Annahme: Der Speicher kann täglich geladen und entladen werden
+    const tagesBedarf = fehlenderStrom / 365;
+
+    // 3. Benötigte Speichergröße (kWh)
+    // Berücksichtigt: Tagesbedarf + Puffer + verfügbarer Überschuss
+    const speicherGroesse = Math.min(
+        tagesBedarf * 2,  // 100% Puffer für Nachtverbrauch
+        überschuss * 0.15  // Maximal 15% des Jahresüberschusses als Speichergröße
+    );
+
+    // Mindestgröße: 10 kWh, Maximalgröße: 2000 kWh
+    const empfohleneSpeicherGroesse = Math.max(10, Math.min(speicherGroesse, 2000));
+
+    // ===== ERREICHBARER AUTARKIEGRAD =====
+    // Wie viel Strom kann tatsächlich durch den Speicher abgedeckt werden?
+    // Annahme: Der Speicher wird täglich voll geladen und entladen
+    const speicherNutzungProJahr = Math.min(
+        empfohleneSpeicherGroesse * 365 * eta,  // Maximal mögliche Speichernutzung
+        überschuss * eta                        // Begrenzt durch verfügbaren Überschuss
+    );
+
+    const eigenverbrauchMitSpeicher = direktVerbrauch + speicherNutzungProJahr;
+    const erreichterAutarkie = Math.min(
+        (eigenverbrauchMitSpeicher / input.verbrauch) * 100,
+        100
+    );
+
+    // ===== INVESTITIONSKOSTEN =====
+    const investition = empfohleneSpeicherGroesse * input.speicherKosten;
+
+    // ===== JÄHRLICHE EINSPARUNG =====
+    // Einsparung = (Eigenverbrauch mit Speicher - Eigenverbrauch ohne Speicher) * Strompreis
+    // + (Überschuss ohne Speicher - Überschuss mit Speicher) * (Strompreis - Einspeisevergütung)
+    const überschussMitSpeicher = Math.max(0, überschuss - (speicherNutzungProJahr / eta));
+    const einsparungDurchEigenverbrauch = (eigenverbrauchMitSpeicher - direktVerbrauch) * input.strompreis;
+    const einsparungDurchReduzierteEinspeisung = (überschuss - überschussMitSpeicher) * (input.strompreis - input.einspeiseverguetung);
+    const jaehrlicheEinsparung = einsparungDurchEigenverbrauch + einsparungDurchReduzierteEinspeisung;
+
+    // ===== AMORTISATIONSZEIT =====
+    const amortisationszeit = jaehrlicheEinsparung > 0
+        ? investition / jaehrlicheEinsparung
+        : 999;
+
+    // ===== JÄHRLICHE RENDITE =====
+    const jaehrlicheRendite = jaehrlicheEinsparung > 0
+        ? (jaehrlicheEinsparung / investition) * 100
+        : 0;
+
+    // ===== AMORTISATIONSVERLAUF =====
+    const amortisationsVerlauf = calculateAmortisationVerlauf(
+        investition,
+        jaehrlicheEinsparung,
+        input.lebensdauer
+    );
+
+    return {
+        speicherGroesse: Math.round(empfohleneSpeicherGroesse),
+        erreichterAutarkie: Math.round(erreichterAutarkie * 10) / 10,
+        investition: Math.round(investition),
+        jaehrlicheEinsparung: Math.round(jaehrlicheEinsparung),
+        amortisationszeit: Math.round(amortisationszeit * 10) / 10,
+        jaehrlicheRendite: Math.round(jaehrlicheRendite * 10) / 10,
+        pvErtrag: Math.round(pvErtrag),
+        direktVerbrauch: Math.round(direktVerbrauch),
+        überschuss: Math.round(überschuss),
+        amortisationsVerlauf: amortisationsVerlauf
+    };
+}
+
+function calculateAmortisationVerlauf(investition, jaehrlicheEinsparung, lebensdauer) {
+    const verlauf = [];
+    let kumuliert = 0;
+
+    for (let jahr = 1; jahr <= lebensdauer * 2; jahr++) {
+        if (jahr <= lebensdauer) {
+            kumuliert += jaehrlicheEinsparung;
+        } else {
+            kumuliert += jaehrlicheEinsparung * 0.8;
+        }
+
+        verlauf.push({
+            jahr: jahr,
+            kumuliert: kumuliert,
+            investition: investition,
+            amortisiert: kumuliert >= investition
+        });
+
+        if (kumuliert >= investition) break;
     }
 
-    .input-section,
-    .result-section {
-        padding: 20px;
-    }
-
-    .result-value {
-        font-size: 1.5rem;
-    }
-
-    .btn {
-        padding: 12px;
-        font-size: 1rem;
-    }
+    return verlauf;
 }
 
-/* Animationen */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+function displayResults(results) {
+    document.getElementById('speicher-groesse').textContent = `${formatNumber(results.speicherGroesse)} kWh`;
+    document.getElementById('erreichter-autarkie').textContent = `${formatNumber(results.erreichterAutarkie)} %`;
+    document.getElementById('investition').textContent = formatCurrency(results.investition);
+    document.getElementById('einsparung').textContent = `${formatCurrency(results.jaehrlicheEinsparung)} / Jahr`;
+    document.getElementById('amortisation').textContent = `${formatNumber(results.amortisationszeit)} Jahre`;
+    document.getElementById('rendite').textContent = `${formatNumber(results.jaehrlicheRendite)} %`;
+    document.getElementById('ergebnis').scrollIntoView({ behavior: 'smooth' });
 }
 
-.result-card {
-    animation: fadeIn 0.5s ease forwards;
+function initChart() {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    script.onload = createChart;
+    document.head.appendChild(script);
 }
 
-.result-card:nth-child(1) { animation-delay: 0.1s; }
-.result-card:nth-child(2) { animation-delay: 0.2s; }
-.result-card:nth-child(3) { animation-delay: 0.3s; }
-.result-card:nth-child(4) { animation-delay: 0.4s; }
-.result-card:nth-child(5) { animation-delay: 0.5s; }
-.result-card:nth-child(6) { animation-delay: 0.6s; }
-
-/* Farbige Akzente für verschiedene Ergebnisse */
-#speicher-groesse { color: var(--secondary-color); }
-#erreichter-autarkie { color: var(--success-color); }
-#investition { color: var(--accent-color); }
-#einsparung { color: var(--success-color); }
-#amortisation { color: var(--warning-color); }
-#rendite { color: var(--secondary-color); }
-
-/* Tooltip für zusätzliche Infos */
-[data-tooltip] {
-    position: relative;
-    cursor: help;
+function createChart() {
+    const ctx = document.getElementById('amortisation-chart').getContext('2d');
+    amortisationChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Kumulierte Einsparung',
+                data: [],
+                borderColor: '#27ae60',
+                backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                fill: true,
+                tension: 0.4
+            }, {
+                label: 'Investition',
+                data: [],
+                borderColor: '#e74c3c',
+                backgroundColor: 'transparent',
+                borderDash: [5, 5],
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Einsparung (€)' }
+                },
+                x: {
+                    title: { display: true, text: 'Jahre' }
+                }
+            }
+        }
+    });
 }
 
-[data-tooltip]:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #333;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    white-space: nowrap;
-    z-index: 100;
+function updateChart(results) {
+    if (!amortisationChart) return;
+    const verlauf = results.amortisationsVerlauf;
+    amortisationChart.data.labels = verlauf.map(v => `Jahr ${v.jahr}`);
+    amortisationChart.data.datasets[0].data = verlauf.map(v => v.kumuliert);
+    amortisationChart.data.datasets[1].data = verlauf.map(v => v.investition);
+    amortisationChart.update();
 }
 
-/* Ladeanimation */
-.loading {
-    position: relative;
-    pointer-events: none;
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.6s ease infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
+function formatCurrency(amount) {
+    return `${formatNumber(Math.round(amount))} €`;
 }
